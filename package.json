@@ -1,0 +1,28 @@
+{
+  "name": "duckdb_sql_pivot",
+  "version": "0.0.1",
+  "description": "Use DuckDB to pivot data using SQL",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alex-Monahan/duckdb_sql_pivot.git"
+  },
+  "keywords": [
+    "DuckDB",
+    "SQL",
+    "Pivot"
+  ],
+  "author": "Alex Monahan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Alex-Monahan/duckdb_sql_pivot/issues"
+  },
+  "homepage": "https://github.com/Alex-Monahan/duckdb_sql_pivot#readme",
+  "dependencies": {
+    "duckdb": "^0.3.0",
+    "express": "^4.17.1"
+  }
+}
