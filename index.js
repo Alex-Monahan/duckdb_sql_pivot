@@ -55,8 +55,8 @@ async function column_list(db, table_name) {
 async function example_sql(db) {
     var sql = `
     SELECT
-          category
-        , subcategory
+          CASE WHEN GROUPING(category) = 1 then 'Total' else category end as category
+        , CASE WHEN GROUPING(subcategory) = 1 then 'Total' else subcategory end as subcategory
         , MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | MAX(revenue)"
         , AVG(inventory) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | AVG(inventory)"
 
@@ -79,8 +79,10 @@ async function example_sql(db) {
             , subcategory
         )
     ORDER BY
-          category nulls last
-        , subcategory nulls last
+          grouping(category)
+        , category
+        , grouping(subcategory)
+        , subcategory
     `
     return run_query(db,sql)
 }
