@@ -25,7 +25,7 @@ app.get('/pivot', async (req, res) => {
     table_create_message = await create_example_table(db, 'my_table');
     console.log(table_create_message);
     try {
-        message = await build_pivot_sql(db,
+        pivot_sql = await build_pivot_sql(db,
                                         req.query.table_name,
                                         req.query.rows,
                                         req.query.columns,
@@ -34,7 +34,10 @@ app.get('/pivot', async (req, res) => {
                                         
                                         req.query.row_subtotals //0 or 1 since Node.JS DuckDB does not support booleans
                                         )
+        console.log(pivot_sql);
+        message = await run_query(db,pivot_sql)
         // message = await example_sql(db);
+        // message = await test_string_agg_bug(db);
     } catch(e) {
         message = e.message;
     }
@@ -114,16 +117,85 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     //      Then do a text concatenation at the clause-ish level (rows separate from distinct_columns...)
     //      Then union them all together, but have a where clause to not include clauses that aren't needed
     //      Then do a final concatenation
+    //The SQL used to build up the SQL statement will be lower case. The SQL I generate will have upper case keywords.
     var sql = `
-        WITH rows as (
-            SELECT 
-                UNNEST(['`+clean_query_parameter(rows.replace(/,/g,"','"))+`']) as rows
+        with rows as (
+            select 
+                unnest(['`+clean_query_parameter(rows.replace(/,/g,"','"))+`']) as rows
                 , `+clean_query_parameter(row_subtotals)+` as row_subtotals
+        ), rows_sub_clause as (
+            select 
+                case when row_subtotals = 0 then rows 
+                else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
+                end as rows_sub_clause
+            from rows
+        ), select_clause as (
+            --TODO: Add in the columns_sub_clause prior to this point
+            select
+                'SELECT
+                ' ||
+                string_agg(
+                    rows_sub_clause
+                , ', ') as select_clause
+            from rows_sub_clause
+        ), from_clause as (
+            select ' FROM ' || '"` + clean_query_parameter(table_name) + `"' as from_clause
+        ), group_by_clause as (
+            select 
+                min(case when row_subtotals = 0 then 'GROUP BY '
+                else ' GROUP BY 
+                ROLLUP ('
+                end)
+                || string_agg(rows,',') ||
+                min(case when row_subtotals = 0 then ''
+                else ')'
+                end) as group_by_clause
+            from rows
+        ), order_by_clause as (
+            select 
+                min(' ORDER BY 
+                ')
+                || string_agg(
+                    case when row_subtotals = 0 then rows
+                    else 'GROUPING(' || rows || '), ' || rows 
+                    end
+                , ', ') as order_by_clause
+            from rows
+        ), all_clauses as (
+            --For some reason, not grouping by something is causing an issue here
+            --TODO: Remove the dummy column once that bug is fixed!
+            select 1 as dummy, select_clause::varchar as clause from select_clause union all
+            select 1 as dummy, from_clause::varchar as clause from from_clause union all
+            select 1 as dummy, group_by_clause::varchar as clause from group_by_clause union all
+            select 1 as dummy, order_by_clause::varchar as clause from order_by_clause
         )
-        select * from rows
+        select 
+            string_agg(clause, '
+            ') as clauses
+        from all_clauses
+        group by
+            dummy
+            
+        
     `
     console.log(sql);
-    return run_query(db,sql)
+    query_output = await run_query(db,sql)
+    return query_output[0].clauses;
+}
+
+async function test_string_agg_bug(db) {
+    sql = `
+    WITH my_data as (
+        SELECT 1 as dummy,  'text1'::varchar(1000) as my_column union all
+        SELECT 1 as dummy,  'text2'::varchar(1000) as my_column union all
+        SELECT 1 as dummy,  'text3'::varchar(1000) as my_column 
+    )
+        SELECT string_agg(my_column,', ') as my_string_agg 
+        FROM my_data
+        GROUP BY
+            dummy
+    `
+    return run_query(db,sql);
 }
 
 function clean_query_parameter(parameter) {
