@@ -29,13 +29,14 @@ app.get('/pivot', async (req, res) => {
                                         req.query.table_name,
                                         req.query.rows,
                                         req.query.columns,
-                                        req.query.values,
+                                        req.query.values, //In the format of function(column) like AVG(revenue)
                                         req.query.filters,
                                         
                                         req.query.row_subtotals //0 or 1 since Node.JS DuckDB does not support booleans
                                         )
         console.log(pivot_sql);
-        message = await run_query(db,pivot_sql)
+        message = pivot_sql;
+        // message = await run_query(db,pivot_sql)
         // message = await example_sql(db);
         // message = await test_string_agg_bug(db);
     } catch(e) {
@@ -64,6 +65,18 @@ async function column_list(db, table_name) {
 }
 
 async function example_sql(db) {
+    /*
+        To build the columns portion of this:
+        I have a table with one row per column with the column name in it 
+        I have a table with distinct values of those columns and I need to add a row_number to this with the right ordering
+        For each row in the distinct_columns table, I need to make one row for product_family = 'Flintstones' and one for product = 'Rock 1'
+            so, join to the columns table and build those statements.
+            Then string_agg them together to get the (WHERE product_family = 'Flintstones' AND product = 'Rock 1') by grouping by the row_number
+                (At the same time, I should also just build the Flintstones | Rock1 portion as another column for alias)
+        Then join to the values table
+            Then do the other string manipulation on all combinations of distinct_columns and values (I need to order by the group number, then by the values order somehow)
+
+    */
     var sql = `
     SELECT
           CASE WHEN GROUPING(category) = 1 then 'Total' else category end as category
@@ -118,6 +131,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     //      Then union them all together, but have a where clause to not include clauses that aren't needed
     //      Then do a final concatenation
     //The SQL used to build up the SQL statement will be lower case. The SQL I generate will have upper case keywords.
+    //TODO: Add in WITH ORDINALITY a(rows, row_order) to enforce order on the unnest clause for rows
     var sql = `
         with rows as (
             select 
@@ -129,15 +143,38 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
                 end as rows_sub_clause
             from rows
+        ), columns as (
+            select 
+                unnest(['`+clean_query_parameter(columns.replace(/,/g,"','"))+`']) as columns
+                
+        ), distinct_columns as (
+            select distinct
+                `+clean_query_parameter(columns)+`
+            from "`+clean_query_parameter(table_name)+`"
+        ), columns_sub_clause as (
+            select
+                columns as columns_sub_clause
+            from columns
         ), select_clause as (
             --TODO: Add in the columns_sub_clause prior to this point
             select
                 'SELECT
                 ' ||
                 string_agg(
-                    rows_sub_clause
-                , ', ') as select_clause
-            from rows_sub_clause
+                    sub_clause
+                , '\n, ') as select_clause
+            from (
+                select 
+                    clause_order
+                    , sub_clause
+                from (
+                    select 1 as clause_order, rows_sub_clause as sub_clause from rows_sub_clause union all
+                    select 2 as clause_order, columns_sub_clause as sub_clause from columns_sub_clause 
+                ) sub_clauses
+                order by
+                    clause_order
+            ) sub_clauses
+            
         ), from_clause as (
             select ' FROM ' || '"` + clean_query_parameter(table_name) + `"' as from_clause
         ), group_by_clause as (
@@ -164,17 +201,19 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
         ), all_clauses as (
             --For some reason, not grouping by something is causing an issue here
             --TODO: Remove the dummy column once that bug is fixed!
-            select 1 as dummy, select_clause::varchar as clause from select_clause union all
-            select 1 as dummy, from_clause::varchar as clause from from_clause union all
-            select 1 as dummy, group_by_clause::varchar as clause from group_by_clause union all
-            select 1 as dummy, order_by_clause::varchar as clause from order_by_clause
+            select 1 as dummy, 1 as clause_order, select_clause::varchar as clause from select_clause union all
+            select 1 as dummy, 2 as clause_order, from_clause::varchar as clause from from_clause union all
+            select 1 as dummy, 3 as clause_order, group_by_clause::varchar as clause from group_by_clause union all
+            select 1 as dummy, 4 as clause_order, order_by_clause::varchar as clause from order_by_clause
         )
         select 
             string_agg(clause, '
             ') as clauses
-        from all_clauses
+        from (select * from all_clauses order by clause_order) clauses
         group by
             dummy
+        
+            
             
         
     `
@@ -202,13 +241,15 @@ function clean_query_parameter(parameter) {
     //Super basic - just prevent drops, inserts, updates, and semicolons.
     if (typeof parameter == 'number') return parameter;
 
+    //If you want to have a column with one of these keywords in the name, then it can't be at the end of that name.
     return parameter.replace(/;/gi,'')
-                    .replace(/drop/gi, '')
-                    .replace(/update/gi, '')
-                    .replace(/insert/gi, '')
-                    .replace(/delete/gi, '')
-                    .replace(/alter/gi, '')
-                    .replace(/create/gi, '');
+                    .replace(/drop /gi, '')
+                    .replace(/update /gi, '')
+                    .replace(/insert /gi, '')
+                    .replace(/delete /gi, '')
+                    .replace(/alter /gi, '')
+                    .replace(/create /gi, '')
+                    .replace(/copy /gi, '');
 }
 
 async function run_query(db,sql,params) {
