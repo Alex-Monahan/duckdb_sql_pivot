@@ -11,7 +11,7 @@ app.use(cors({
 app.get('/column_list', async (req, res) => {
     var db = new duckdb.Database(':memory:');
     table_create_message = await create_example_table(db, 'my_table');
-    console.log(table_create_message);
+    // console.log(table_create_message);
     try {
         message = await column_list(db, 'my_table')
     } catch(e) {
@@ -25,7 +25,8 @@ app.get('/pivot', async (req, res) => {
     table_create_message = await create_example_table(db, 'my_table');
     console.log(table_create_message);
     try {
-        message = await build_pivot_sql(db, req.query.table_name, req.query.rows, req.query.columns, req.query.values, req.query.filters)
+        // message = await build_pivot_sql(db, req.query.table_name, req.query.rows, req.query.columns, req.query.values, req.query.filters)
+        message = await example_sql(db);
     } catch(e) {
         message = e.message;
     }
@@ -54,27 +55,32 @@ async function column_list(db, table_name) {
 async function example_sql(db) {
     var sql = `
     SELECT
-        CASE WHEN row1
-        , row2
-        , MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock1') as "Flintstones | Rock1 | MAX(revenue)"
-        , MAX(revenue) FILTER (WHERE product_family = 'Jetsons' AND column2 = column2_value2) as "column1_value2 | column2_value2 | MAX(revenue)"
-            ...
+          category
+        , subcategory
+        , MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | MAX(revenue)"
+        , AVG(inventory) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | AVG(inventory)"
 
-        , AVG(inventory) FILTER (WHERE product_family = 'Flintstones' AND column2 = column2_value1) as "column1_value1 | column2_value1 | AVG(inventory)"
-        , AVG(inventory) FILTER (WHERE product_family = 'Jetsons' AND column2 = column2_value2) as "column1_value2 | column2_value2 | AVG(inventory)"
-            ...
+        , MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 2') as "Flintstones | Rock2 | MAX(revenue)"
+        , AVG(inventory) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 2') as "Flintstones | Rock2 | AVG(inventory)"
+
+        , MAX(revenue) FILTER (WHERE product_family = 'Jetsons' AND product = 'Laser 1') as "Jetsons | Laser1 | MAX(revenue)"
+        , AVG(inventory) FILTER (WHERE product_family = 'Jetsons' AND product = 'Laser 1') as "Jetsons | Laser1 | AVG(inventory)"
+
+        , MAX(revenue) FILTER (WHERE product_family = 'Jetsons' AND product = 'Laser 2') as "Jetsons | Laser2 | MAX(revenue)"
+        , AVG(inventory) FILTER (WHERE product_family = 'Jetsons' AND product = 'Laser 2') as "Jetsons | Laser2 | AVG(inventory)"
+
     FROM my_table
     WHERE
-        filter1 in ('filter1_value1','filter1_value2')
-        AND filter2 in ('filter2_value1','filter2_value2')
+        category in ('A','B')
+        AND subcategory in ('Y','Z')
     GROUP BY
         ROLLUP(
-              row1
-            , row2
+              category
+            , subcategory
         )
     ORDER BY
-          row1
-        , row2
+          category nulls last
+        , subcategory nulls last
     `
     return run_query(db,sql)
 }

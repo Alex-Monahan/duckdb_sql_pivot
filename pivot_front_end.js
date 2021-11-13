@@ -6,6 +6,7 @@ window.onload = async function() {
     var pivoted_data = await response.json();
 
     const grid = document.querySelector('revo-grid');
+    grid.resize = true;
     const columns = [
         { prop: 'name', name: 'First column' }
     ];
