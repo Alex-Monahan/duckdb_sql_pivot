@@ -46,13 +46,60 @@ async function column_list(db, table_name) {
     return run_query(db,sql,[table_name]);
 }
 
-async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined) {
+async function example_sql(db) {
     var sql = `
-        select
-            *
-        from ` + table_name
-    
+    SELECT
+        CASE WHEN row1
+        , row2
+        , MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock1') as "Flintstones | Rock1 | MAX(revenue)"
+        , MAX(revenue) FILTER (WHERE product_family = 'Jetsons' AND column2 = column2_value2) as "column1_value2 | column2_value2 | MAX(revenue)"
+            ...
+
+        , AVG(inventory) FILTER (WHERE product_family = 'Flintstones' AND column2 = column2_value1) as "column1_value1 | column2_value1 | AVG(inventory)"
+        , AVG(inventory) FILTER (WHERE product_family = 'Jetsons' AND column2 = column2_value2) as "column1_value2 | column2_value2 | AVG(inventory)"
+            ...
+    FROM my_table
+    WHERE
+        filter1 in ('filter1_value1','filter1_value2')
+        AND filter2 in ('filter2_value1','filter2_value2')
+    GROUP BY
+        ROLLUP(
+              row1
+            , row2
+        )
+    ORDER BY
+          row1
+        , row2
+    `
     return run_query(db,sql)
+}
+
+async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined) {
+
+    var sql = `
+        with distinct_columns as (
+            select
+                distinct
+                    product_family
+                    , product
+            from ` + table_name + 
+        `)
+        select * from distinct_columns
+        `
+    return run_query(db,sql)
+}
+
+function clean_query_parameter(parameter) {
+    //Super basic - just prevent drops, inserts, updates, and semicolons.
+    if (typeof parameter == 'number') return parameter;
+
+    return parameter.replace(/;/gi,'')
+                    .replace(/drop/gi, '')
+                    .replace(/update/gi, '')
+                    .replace(/insert/gi, '')
+                    .replace(/delete/gi, '')
+                    .replace(/alter/gi, '')
+                    .replace(/create/gi, '');
 }
 
 async function run_query(db,sql,params) {
