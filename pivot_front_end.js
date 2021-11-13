@@ -1,7 +1,7 @@
 window.onload = async function() {
     console.log('Loaded!!');
 
-    const response = await fetch('http:localhost:3000/pivot?table_name=my_table');
+    const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory');
 
     var pivoted_data = await response.json();
 

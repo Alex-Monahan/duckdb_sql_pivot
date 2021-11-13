@@ -25,8 +25,16 @@ app.get('/pivot', async (req, res) => {
     table_create_message = await create_example_table(db, 'my_table');
     console.log(table_create_message);
     try {
-        // message = await build_pivot_sql(db, req.query.table_name, req.query.rows, req.query.columns, req.query.values, req.query.filters)
-        message = await example_sql(db);
+        message = await build_pivot_sql(db,
+                                        req.query.table_name,
+                                        req.query.rows,
+                                        req.query.columns,
+                                        req.query.values,
+                                        req.query.filters,
+                                        
+                                        req.query.row_subtotals //0 or 1 since Node.JS DuckDB does not support booleans
+                                        )
+        // message = await example_sql(db);
     } catch(e) {
         message = e.message;
     }
@@ -87,18 +95,34 @@ async function example_sql(db) {
     return run_query(db,sql)
 }
 
-async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined) {
+async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined,
+                               row_subtotals=1) {
 
+    // var sql = `
+    //     with distinct_columns as (
+    //         select
+    //             distinct
+    //                 product_family
+    //                 , product
+    //         from ` + table_name + 
+    //     `)
+    //     select * from distinct_columns
+    //     `
+
+    //Note: Build up each clause in 2 layers:
+    //      First build up each individual row of text in the query
+    //      Then do a text concatenation at the clause-ish level (rows separate from distinct_columns...)
+    //      Then union them all together, but have a where clause to not include clauses that aren't needed
+    //      Then do a final concatenation
     var sql = `
-        with distinct_columns as (
-            select
-                distinct
-                    product_family
-                    , product
-            from ` + table_name + 
-        `)
-        select * from distinct_columns
-        `
+        WITH rows as (
+            SELECT 
+                UNNEST(['`+clean_query_parameter(rows.replace(/,/g,"','"))+`']) as rows
+                , `+clean_query_parameter(row_subtotals)+` as row_subtotals
+        )
+        select * from rows
+    `
+    console.log(sql);
     return run_query(db,sql)
 }
 
