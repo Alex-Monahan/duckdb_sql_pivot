@@ -2,6 +2,11 @@ const express = require('express')
 const duckdb = require('duckdb');
 const app = express()
 const port = 3000
+const cors = require('cors');
+
+app.use(cors({
+    origin: '*'
+}));
 
 app.get('/column_list', async (req, res) => {
     var db = new duckdb.Database(':memory:');
