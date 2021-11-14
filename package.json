@@ -23,7 +23,7 @@
   "homepage": "https://github.com/Alex-Monahan/duckdb_sql_pivot#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "duckdb": "^0.3.1-dev678.0",
+    "duckdb": "^0.3.1-dev687.0",
     "express": "^4.17.1"
   }
 }

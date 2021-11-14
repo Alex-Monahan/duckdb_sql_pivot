@@ -36,6 +36,7 @@ app.get('/pivot', async (req, res) => {
                                         )
         console.log(pivot_sql);
         message = pivot_sql;
+
         // message = await run_query(db,pivot_sql)
         // message = await example_sql(db);
         // message = await test_string_agg_bug(db);
@@ -199,19 +200,15 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 , ', ') as order_by_clause
             from rows
         ), all_clauses as (
-            --For some reason, not grouping by something is causing an issue here
-            --TODO: Remove the dummy column once that bug is fixed!
-            select 1 as dummy, 1 as clause_order, select_clause::varchar as clause from select_clause union all
-            select 1 as dummy, 2 as clause_order, from_clause::varchar as clause from from_clause union all
-            select 1 as dummy, 3 as clause_order, group_by_clause::varchar as clause from group_by_clause union all
-            select 1 as dummy, 4 as clause_order, order_by_clause::varchar as clause from order_by_clause
+            select 1 as clause_order, select_clause::varchar as clause from select_clause union all
+            select 2 as clause_order, from_clause::varchar as clause from from_clause union all
+            select 3 as clause_order, group_by_clause::varchar as clause from group_by_clause union all
+            select 4 as clause_order, order_by_clause::varchar as clause from order_by_clause
         )
         select 
             string_agg(clause, '
             ') as clauses
         from (select * from all_clauses order by clause_order) clauses
-        group by
-            dummy
         
             
             
@@ -225,14 +222,12 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
 async function test_string_agg_bug(db) {
     sql = `
     WITH my_data as (
-        SELECT 1 as dummy,  'text1'::varchar(1000) as my_column union all
-        SELECT 1 as dummy,  'text2'::varchar(1000) as my_column union all
-        SELECT 1 as dummy,  'text3'::varchar(1000) as my_column 
+        SELECT 'text1'::varchar(1000) as my_column union all
+        SELECT 'text2'::varchar(1000) as my_column union all
+        SELECT 'text3'::varchar(1000) as my_column 
     )
         SELECT string_agg(my_column,', ') as my_string_agg 
         FROM my_data
-        GROUP BY
-            dummy
     `
     return run_query(db,sql);
 }
@@ -243,6 +238,9 @@ function clean_query_parameter(parameter) {
 
     //If you want to have a column with one of these keywords in the name, then it can't be at the end of that name.
     return parameter.replace(/;/gi,'')
+    //TODO: Add in replacements to remove comments
+                    // .replace(/\/\*/gi,'')
+                    // .replace(/--/gi,'')
                     .replace(/drop /gi, '')
                     .replace(/update /gi, '')
                     .replace(/insert /gi, '')
