@@ -114,18 +114,6 @@ async function example_sql(db) {
 
 async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined,
                                row_subtotals=1) {
-
-    // var sql = `
-    //     with distinct_columns as (
-    //         select
-    //             distinct
-    //                 product_family
-    //                 , product
-    //         from ` + table_name + 
-    //     `)
-    //     select * from distinct_columns
-    //     `
-
     //Note: Build up each clause in 2 layers:
     //      First build up each individual row of text in the query
     //      Then do a text concatenation at the clause-ish level (rows separate from distinct_columns...)
@@ -133,6 +121,10 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     //      Then do a final concatenation
     //The SQL used to build up the SQL statement will be lower case. The SQL I generate will have upper case keywords.
     //TODO: Add in WITH ORDINALITY a(rows, row_order) to enforce order on the unnest clause for rows
+    columns_sub_clause = await build_column_sub_clause(db, table_name, columns);
+    console.log(columns_sub_clause);
+    return run_query(db,columns_sub_clause);
+
     var sql = `
         with rows as (
             select 
@@ -144,20 +136,9 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
                 end as rows_sub_clause
             from rows
-        ), columns as (
-            select 
-                unnest(['`+clean_query_parameter(columns.replace(/,/g,"','"))+`']) as columns
-                
-        ), distinct_columns as (
-            select distinct
-                `+clean_query_parameter(columns)+`
-            from "`+clean_query_parameter(table_name)+`"
         ), columns_sub_clause as (
-            select
-                columns as columns_sub_clause
-            from columns
+            `+columns_sub_clause+`
         ), select_clause as (
-            --TODO: Add in the columns_sub_clause prior to this point
             select
                 'SELECT
                 ' ||
@@ -205,17 +186,45 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
             select 3 as clause_order, group_by_clause::varchar as clause from group_by_clause union all
             select 4 as clause_order, order_by_clause::varchar as clause from order_by_clause
         )
+        
         select 
             string_agg(clause, '
             ') as clauses
         from (select * from all_clauses order by clause_order) clauses
         
-            
-            
-        
     `
     console.log(sql);
     query_output = await run_query(db,sql)
+    return query_output[0].clauses;
+    // return query_output;
+}
+
+async function build_column_sub_clause(db, table_name, columns=undefined) {
+    sql = `
+    WITH columns as (
+        select 
+            unnest(['`+clean_query_parameter(columns.replace(/,/g,"','"))+`']) as columns
+            
+    ), distinct_columns as (
+        select
+            row_number() over (order by `+clean_query_parameter(columns)+`) as distinct_order
+            , distinct_columns.*
+        from (
+            select distinct
+                `+clean_query_parameter(columns)+`
+            from "`+clean_query_parameter(table_name)+`"
+        ) distinct_columns
+    ), filter_where_clause as (
+        --if I take product_family,product and replace , with 
+        --, MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | MAX(revenue)"
+        select
+            --'''' || columns || ' = ''''||' || columns || '||'''
+            'SELECT ''' || columns || ' = '' || ' || columns || ' FROM ' || '(SELECT DISTINCT `+clean_query_parameter(columns)+` FROM "`+clean_query_parameter(table_name)+`") distinct_columns' as clauses
+        from columns
+    )
+    select * from filter_where_clause
+    `
+    query_output = await run_query(db,sql);
     return query_output[0].clauses;
 }
 
