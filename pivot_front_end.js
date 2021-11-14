@@ -1,4 +1,21 @@
+/* Front End TODO list:
+        Make column headers dynamic
+        Make basic draggable/droppable GUI
+        Test out a lot of combinations
+        Order by / filter each column
+        Add GUI and support for other parameters (Ex: subtotals or not)
+        Freeze panes
+        Auto-size the header widths
+        Rowspan?
+        Allow for Values sigma feature?
+            If you do it on the front end, should be able to just re-order the column headers 
+            (as long as original name is tracked separately for the prop value)
+        
+
+*/
 window.onload = async function() {
+
+    
     console.log('Loaded!!');
     const column_separator = ' | ';
     const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory&columns=product_family,product&values=MAX(revenue),AVG(inventory)');
@@ -37,6 +54,13 @@ window.onload = async function() {
     function dummy_build_columns() {
         column_size = 125;
         //Maybe I can build my own size by taking the length of the deepest node's name and multiplying by 7px?
+        //Can I do this with a loop instead of recursively? I can just look back and see if we are at the final depth and if it has changed since the last one?
+        /*
+            for column in columns:
+                for j in depth:
+                    if column_part 1 != prior_column_part_1 then create a name:'column_part_1' with everything up to this point?
+
+        */
         return [
             {name:'category', prop: 'category'},
             {name:'subcategory', prop: 'subcategory'},

@@ -1,3 +1,18 @@
+/* Back end TODO list:
+        Filters feature
+            In both the final query and the distinct columns pre-query
+        Limit feature
+        Order by feature 
+            Would work well with the limit feature (but what about columns?)
+        Having feature
+            In both the final query and the distinct columns pre-query
+                Would need to switch from distinct to a group by and include the values in there
+                (and then add the filters in the having clause)
+            
+
+
+
+*/
 const express = require('express')
 const duckdb = require('duckdb');
 const app = express()
