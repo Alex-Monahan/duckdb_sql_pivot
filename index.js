@@ -228,13 +228,9 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
                 , ' || '' AND '' || ') ||
             ' || '')'' ' ||
             ' || '' AS  "'' || ' || 
-
-
-            string_agg('
-                '''''''' || ' || columns || ' ||''''''''' 
-                , ' || '' | '' || ') ||
-
-
+                string_agg('
+                    '''' || ' || columns || ' ||''''' 
+                    , ' || '' | '' || ') ||
             ' || ''"'' ' ||
             
             ' 
