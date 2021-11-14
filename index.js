@@ -38,7 +38,7 @@ app.get('/pivot', async (req, res) => {
         message = pivot_sql;
 
         // message = await run_query(db,pivot_sql)
-        // message = await example_sql(db);
+
     } catch(e) {
         message = e.message;
     }
@@ -120,9 +120,9 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     //      Then do a final concatenation
     //The SQL used to build up the SQL statement will be lower case. The SQL I generate will have upper case keywords.
     //TODO: Add in WITH ORDINALITY a(rows, row_order) to enforce order on the unnest clause for rows
-    columns_sub_clause = await build_column_sub_clause(db, table_name, columns);
-    console.log(columns_sub_clause);
-    return run_query(db,columns_sub_clause);
+    pre_columns_sub_clause = await build_pre_column_sub_clause(db, table_name, columns, values, filters);
+    console.log(pre_columns_sub_clause);
+    // return run_query(db,columns_sub_clause);
 
     var sql = `
         with rows as (
@@ -135,8 +135,8 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
                 end as rows_sub_clause
             from rows
-        ), columns_sub_clause as (
-            `+columns_sub_clause+`
+        ), pre_columns_sub_clause as (
+            `+pre_columns_sub_clause+`
         ), select_clause as (
             select
                 'SELECT
@@ -150,7 +150,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                     , sub_clause
                 from (
                     select 1 as clause_order, rows_sub_clause as sub_clause from rows_sub_clause union all
-                    select 2 as clause_order, columns_sub_clause as sub_clause from columns_sub_clause 
+                    select 2 as clause_order, pre_columns_sub_clause as sub_clause from pre_columns_sub_clause 
                 ) sub_clauses
                 order by
                     clause_order
@@ -198,7 +198,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     // return query_output;
 }
 
-async function build_column_sub_clause(db, table_name, columns=undefined, values=undefined, filters=undefined) {
+async function build_pre_column_sub_clause(db, table_name, columns=undefined, values=undefined, filters=undefined) {
     
     //TODO: I need to add in the column name portion
     //      Then I need to pull in the AVG(revenue) stuff. 
@@ -231,8 +231,10 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
                 string_agg('
                     '''' || ' || columns || ' ||''''' 
                     , ' || '' | '' || ') ||
-            ' || ''"'' ' ||
-            ' AS columns_sub_clause' ||
+            
+            --Don't include the " at this layer since I need to add AVG(revenue) in the subsequent query
+            
+            ' AS pre_columns_sub_clause' ||
             ' 
             FROM ' || '(
                 SELECT
