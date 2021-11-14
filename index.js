@@ -200,10 +200,10 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
 
 async function build_column_sub_clause(db, table_name, columns=undefined, values=undefined, filters=undefined) {
     
-    //TODO: Need to pull in the AVG(revenue) stuff. 
-    //      Then I need to add in the column name portion
-    //      Then I need to string_agg the result together, so I need a 'string_agg(' ||  in the query to group things appropriately
-    //Basically, I need a fully baked AVG(revenue) FILTER (WHERE x = 'blah' and y = 'blahhh') as "x | y | AVG(revenue)"
+    //TODO: I need to add in the column name portion
+    //      Then I need to pull in the AVG(revenue) stuff. 
+    //Basically, I need a fully baked AVG(revenue) FILTER (WHERE x = 'a' and y = 'b') as "a | b | AVG(revenue)"
+    //Then go back to the build_sql_pivot portion and integrate this in with that (should just be a single string_agg with commas between the rows and columns)
     sql = `
     WITH columns as (
         select 
@@ -228,7 +228,13 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
                 , ' || '' AND '' || ') ||
             ' || '')'' ' ||
             ' || '' AS  "'' || ' || 
-            '''woot''' ||
+
+
+            string_agg('
+                '''''''' || ' || columns || ' ||''''''''' 
+                , ' || '' | '' || ') ||
+
+
             ' || ''"'' ' ||
             
             ' 
