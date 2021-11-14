@@ -39,7 +39,6 @@ app.get('/pivot', async (req, res) => {
 
         // message = await run_query(db,pivot_sql)
         // message = await example_sql(db);
-        // message = await test_string_agg_bug(db);
     } catch(e) {
         message = e.message;
     }
@@ -199,7 +198,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     // return query_output;
 }
 
-async function build_column_sub_clause(db, table_name, columns=undefined) {
+async function build_column_sub_clause(db, table_name, columns=undefined, values=undefined, filters=undefined) {
     
     //TODO: Need to pull in the AVG(revenue) stuff. 
     //      Then I need to add in the column name portion
@@ -220,24 +219,27 @@ async function build_column_sub_clause(db, table_name, columns=undefined) {
             from "`+clean_query_parameter(table_name)+`"
         ) distinct_columns
     ), filter_where_clause as (
-        --if I take product_family,product and replace , with 
         --, MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | MAX(revenue)"
         select
-            'SELECT' ||
-            string_agg('
-             ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' 
-            , ' || '' AND '' || ')
-            || ' 
-                FROM ' || '(
-                    SELECT
-                        row_number() over (order by `+clean_query_parameter(columns)+`) as distinct_order
-                        , distinct_columns.*
-                    FROM (
-                        SELECT distinct
-                            `+clean_query_parameter(columns)+`
-                        FROM "`+clean_query_parameter(table_name)+`"
-                    ) distinct_columns
-            ) distinct_columns
+            'SELECT ' ||
+            ''' FILTER ( WHERE '' || ' ||
+                string_agg('
+                ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' 
+                , ' || '' AND '' || ') ||
+            ' || '')'' ' ||
+            ' || '' AS  "'' || ''woot'' || ''"'' ' ||
+            
+            ' 
+            FROM ' || '(
+                SELECT
+                    row_number() over (order by `+clean_query_parameter(columns)+`) as distinct_order
+                    , distinct_columns.*
+                FROM (
+                    SELECT distinct
+                        `+clean_query_parameter(columns)+`
+                    FROM "`+clean_query_parameter(table_name)+`"
+                ) distinct_columns
+            ) numbered_distinct_columns
             ' as clauses
         from columns
     )
@@ -245,19 +247,6 @@ async function build_column_sub_clause(db, table_name, columns=undefined) {
     `
     query_output = await run_query(db,sql);
     return query_output[0].clauses;
-}
-
-async function test_string_agg_bug(db) {
-    sql = `
-    WITH my_data as (
-        SELECT 'text1'::varchar(1000) as my_column union all
-        SELECT 'text2'::varchar(1000) as my_column union all
-        SELECT 'text3'::varchar(1000) as my_column 
-    )
-        SELECT string_agg(my_column,', ') as my_string_agg 
-        FROM my_data
-    `
-    return run_query(db,sql);
 }
 
 function clean_query_parameter(parameter) {
