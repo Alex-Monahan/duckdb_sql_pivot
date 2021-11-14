@@ -218,8 +218,22 @@ async function build_column_sub_clause(db, table_name, columns=undefined) {
         --if I take product_family,product and replace , with 
         --, MAX(revenue) FILTER (WHERE product_family = 'Flintstones' AND product = 'Rock 1') as "Flintstones | Rock1 | MAX(revenue)"
         select
-            --'''' || columns || ' = ''''||' || columns || '||'''
-            'SELECT ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' || ' FROM ' || '(SELECT DISTINCT `+clean_query_parameter(columns)+` FROM "`+clean_query_parameter(table_name)+`") distinct_columns' as clauses
+            'SELECT' ||
+            string_agg('
+             ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' 
+            , ''' AND ''')
+            || ' 
+                FROM ' || '(
+                    SELECT
+                        row_number() over (order by `+clean_query_parameter(columns)+`) as distinct_order
+                        , distinct_columns.*
+                    FROM (
+                        SELECT distinct
+                            `+clean_query_parameter(columns)+`
+                        FROM "`+clean_query_parameter(table_name)+`"
+                    ) distinct_columns
+            ) distinct_columns
+            ' as clauses
         from columns
     )
     select * from filter_where_clause
