@@ -35,9 +35,9 @@ app.get('/pivot', async (req, res) => {
                                         req.query.row_subtotals //0 or 1 since Node.JS DuckDB does not support booleans
                                         )
         console.log(pivot_sql);
-        message = pivot_sql;
+        // message = pivot_sql;
 
-        // message = await run_query(db,pivot_sql)
+        message = await run_query(db,pivot_sql)
 
     } catch(e) {
         message = e.message;
@@ -135,8 +135,16 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
                 end as rows_sub_clause
             from rows
+        ), values as (
+            select 
+                unnest(['`+clean_query_parameter(values.replace(/,/g,"','"))+`']) as values
         ), pre_columns_sub_clause as (
             `+pre_columns_sub_clause+`
+        ), columns_sub_clause as (
+            select
+                values || pre_columns_sub_clause || ' | ' || values || '"' as columns_sub_clause
+            from pre_columns_sub_clause
+            join values on 1=1
         ), select_clause as (
             select
                 'SELECT
@@ -150,7 +158,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                     , sub_clause
                 from (
                     select 1 as clause_order, rows_sub_clause as sub_clause from rows_sub_clause union all
-                    select 2 as clause_order, pre_columns_sub_clause as sub_clause from pre_columns_sub_clause 
+                    select 2 as clause_order, columns_sub_clause as sub_clause from columns_sub_clause 
                 ) sub_clauses
                 order by
                     clause_order
