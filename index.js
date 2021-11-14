@@ -232,7 +232,7 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
                     '''' || ' || columns || ' ||''''' 
                     , ' || '' | '' || ') ||
             ' || ''"'' ' ||
-            
+            ' AS columns_sub_clause' ||
             ' 
             FROM ' || '(
                 SELECT
