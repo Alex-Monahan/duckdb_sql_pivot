@@ -227,7 +227,9 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
                 ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' 
                 , ' || '' AND '' || ') ||
             ' || '')'' ' ||
-            ' || '' AS  "'' || ''woot'' || ''"'' ' ||
+            ' || '' AS  "'' || ' || 
+            '''woot''' ||
+            ' || ''"'' ' ||
             
             ' 
             FROM ' || '(
@@ -245,6 +247,7 @@ async function build_column_sub_clause(db, table_name, columns=undefined, values
     )
     select * from filter_where_clause
     `
+    console.log(sql);
     query_output = await run_query(db,sql);
     return query_output[0].clauses;
 }
