@@ -221,7 +221,7 @@ async function build_column_sub_clause(db, table_name, columns=undefined) {
             'SELECT' ||
             string_agg('
              ''' || columns || ' = '''''' || ' || columns || ' ||''''''''' 
-            , ''' AND ''')
+            , ' || '' AND '' || ')
             || ' 
                 FROM ' || '(
                     SELECT
