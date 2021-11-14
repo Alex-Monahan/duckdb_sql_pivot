@@ -200,6 +200,11 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
 }
 
 async function build_column_sub_clause(db, table_name, columns=undefined) {
+    
+    //TODO: Need to pull in the AVG(revenue) stuff. 
+    //      Then I need to add in the column name portion
+    //      Then I need to string_agg the result together, so I need a 'string_agg(' ||  in the query to group things appropriately
+    //Basically, I need a fully baked AVG(revenue) FILTER (WHERE x = 'blah' and y = 'blahhh') as "x | y | AVG(revenue)"
     sql = `
     WITH columns as (
         select 
