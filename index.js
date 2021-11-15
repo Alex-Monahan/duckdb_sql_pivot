@@ -25,7 +25,8 @@ app.use(cors({
 
 app.get('/column_list', async (req, res) => {
     var db = new duckdb.Database(':memory:');
-    await run_query(db,'PRAGMA THREADS = 16');
+    pragma_output = await run_query(db,"PRAGMA THREADS = 16");
+    console.log('pragma_output',pragma_output);
     table_create_message = await create_example_table(db, 'my_table',0); //Use 0 to get no modification
     console.log(Date.now(),table_create_message);
     try {
@@ -39,6 +40,8 @@ app.get('/column_list', async (req, res) => {
 app.get('/pivot', async (req, res) => {
     var startDate = new Date();
     var db = new duckdb.Database(':memory:');
+    pragma_output = await run_query(db,"PRAGMA THREADS = 16");
+    console.log('pragma_output',pragma_output);
     table_create_message = await create_example_table(db, 'my_table',300000); //Use 0 to get no modification
     console.log(table_create_message);
     var endDate   = new Date();
