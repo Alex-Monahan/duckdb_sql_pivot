@@ -1,5 +1,5 @@
 /* Front End TODO list:
-        Make column headers dynamic
+        DONE: Make column headers dynamic
         Make basic draggable/droppable GUI
         Test out a lot of combinations
         Order by / filter each column
