@@ -3,6 +3,7 @@
         Make basic draggable/droppable GUI
         Test out a lot of combinations
         Order by / filter each column
+            Make filters dynamic by type of data within the column
         Add GUI and support for other parameters (Ex: subtotals or not, subtotals above or below (just ASC vs. DESC in GROUPING() in ORDER BY clause))
         Freeze panes
         Auto-size the header widths
@@ -20,7 +21,7 @@ window.onload = async function() {
     const column_separator = ' | ';
     const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory&columns=product_family,product&values=MAX(revenue),AVG(inventory)');
 
-    var pivoted_data = await response.json();
+    let pivoted_data = await response.json();
 
     const grid = document.querySelector('revo-grid');
     grid.resize = true;
@@ -29,9 +30,9 @@ window.onload = async function() {
         allColumns: true,
         preciseSize: true
     };
-    const columns = [
-        { prop: 'name', name: 'First column' }
-    ];
+    // grid.filter = true; //This is handled directly in the html
+    grid.readonly = true;
+    grid.theme = "default";
     
     grid.columns = build_columns(pivoted_data,column_separator);
     // grid.columns = dummy_build_columns();
@@ -57,14 +58,15 @@ window.onload = async function() {
         var max_depth;
         var depth;
         var current_level;
-        var column_size = 125;
+        var column_size = 150;
 
         var delta_found = false;
+        var found_last_pin = false;
         for (var i=0; i < split_sql_headers.length; i++) {
             delta_found = false
             max_depth = split_sql_headers[i].length;
             if (max_depth == 1) {
-                output_columns.push({name:sql_headers[i],prop:sql_headers[i]})
+                output_columns.push({name:sql_headers[i],prop:sql_headers[i], size:column_size, sortable:true, pin:'colPinStart'})      
                 continue;
             }
 
@@ -80,7 +82,7 @@ window.onload = async function() {
                 var match = find_match_in_array_of_obj(current_level,'name',split_sql_headers[i][depth])
                 if (typeof match == 'undefined') {
                     if (depth == (max_depth - 1)) {
-                        current_level.push({name:split_sql_headers[i][depth], prop:sql_headers[i], size:column_size});
+                        current_level.push({name:split_sql_headers[i][depth], prop:sql_headers[i], size:column_size, sortable:true});
                         break;
                     } else {
                         current_level.push({name:split_sql_headers[i][depth], children: []});

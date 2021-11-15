@@ -1,15 +1,22 @@
 /* Back end TODO list:
         Filters feature
             In both the final query and the distinct columns pre-query
+        Escape single quotes in column values
+        Allow spaces in column names (wrap in double quotes)
+        Make separator dynamic
         Limit feature
         Order by feature 
             Would work well with the limit feature (but what about columns?)
+        Convert from JSON to Apache Arrow for the return type
         Having feature
             In both the final query and the distinct columns pre-query
                 Would need to switch from distinct to a group by and include the values in there
                 (and then add the filters in the having clause)
             
         Only 1 second to pivot 10 million rows!!! 3 seconds to create the example data...
+        .15 seconds to do 1 million! That's fast...
+
+        It takes half the time if subtotals are off! 
 
 
 */
@@ -42,7 +49,7 @@ app.get('/pivot', async (req, res) => {
     var db = new duckdb.Database(':memory:');
     pragma_output = await run_query(db,"PRAGMA THREADS = 16");
     console.log('pragma_output',pragma_output);
-    table_create_message = await create_example_table(db, 'my_table',300000); //Use 0 to get no modification
+    table_create_message = await create_example_table(db, 'my_table',30000); //Use 0 to get no modification
     console.log(table_create_message);
     var endDate   = new Date();
     console.log('Finished creating table after ',(endDate.getTime() - startDate.getTime()) / 1000,' seconds');
