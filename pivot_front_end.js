@@ -33,50 +33,9 @@ window.onload = async function() {
         { prop: 'name', name: 'First column' }
     ];
     
-    var dummy_var = build_columns(pivoted_data,column_separator);
-    grid.columns = dummy_build_columns();
+    grid.columns = build_columns(pivoted_data,column_separator);
+    // grid.columns = dummy_build_columns();
     grid.source = pivoted_data;
-
-
-    // function build_columns(pivoted_data, column_separator) {
-    //     var output_columns = [];
-    //     var sql_headers = [];
-    //     for (var column in pivoted_data[0]) {
-    //         sql_headers.push(column);
-    //     }
-
-    //     var split_sql_headers = [];
-    //     for (var i=0; i < sql_headers.length; i++) {
-    //         split_sql_headers.push(sql_headers[i].split(column_separator));
-    //     }
-
-    //     console.log('split_sql_headers:\n',split_sql_headers);
-
-    //     var output_object = {};
-    //     // var piece_of_output;
-    //     for (var i=0; i < split_sql_headers.length; i++) {
-    //         for (depth=0; depth < max_depth; depth++) {
-                
-    //         }
-        
-    //     }
-    //     console.log(output_object);
-    // }
-
-
-    function OLD_build_columns(pivoted_data,column_separator) {
-        var columns = [];
-        for (var column in pivoted_data[0]) {
-            nested_columns = column.split(column_separator);
-            if (nested_columns.length == 1) {
-                columns.push({prop:column, name:column});
-            } else {
-                
-            }
-            
-        }
-        return columns;
-    }
 
     function build_columns(pivoted_data, column_separator) {
         var output_columns = [];
@@ -94,16 +53,11 @@ window.onload = async function() {
         //Because we are always doing all combinations of things, I know the depth will be consistent for every column that has a separator
         //(headers in the "rows" parameter don't have a separator so they have a depth of 1)
         //I also know that as soon as I find a column with a depth > 1, all other columns will have that depth
-        // var max_depth = 0;
-        // for (var i=0; i < split_sql_headers.length; i++) {
-        //     if (split_sql_headers[i].length > max_depth) max_depth = split_sql_headers[i].length;
-        // }
-        // console.log('max_depth',max_depth);
+
         var max_depth;
         var depth;
-        var prior_names = []; //An array with the same length as max_depth. Will contain the most recent names.
-        var nested_column_to_add;
         var current_level;
+        var column_size = 125;
 
         var delta_found = false;
         for (var i=0; i < split_sql_headers.length; i++) {
@@ -113,87 +67,43 @@ window.onload = async function() {
                 output_columns.push({name:sql_headers[i],prop:sql_headers[i]})
                 continue;
             }
-            //Initialize the first depth > 1 node's initial value
-            // console.log(output_columns.at(-1));
-            // if (typeof output_columns.at(-1).children == 'undefined') {
-            //     output_columns.push({name:split_sql_headers[i][0],children:[]});
-            // }
+
             for (depth=0; depth < max_depth; depth++) {
-                console.log('split_sql_headers[i][depth]',split_sql_headers[i][depth]);
+                // console.log('split_sql_headers[i][depth]',split_sql_headers[i][depth]);
                 
                 if (depth == 0) {
                     // current_level = output_columns.at(-1);
                     current_level = output_columns;
                 }
-                console.log('output_columns',output_columns);
-                console.log('current_level',current_level);
-                if (current_level.at(-1)?.name != split_sql_headers[i][depth]) {
+                // console.log('output_columns',output_columns);
+                // console.log('current_level',current_level);
+                var match = find_match_in_array_of_obj(current_level,'name',split_sql_headers[i][depth])
+                if (typeof match == 'undefined') {
                     if (depth == (max_depth - 1)) {
-                        current_level.push({name:split_sql_headers[i][depth], prop:sql_headers[i]});
+                        current_level.push({name:split_sql_headers[i][depth], prop:sql_headers[i], size:column_size});
                         break;
                     } else {
                         current_level.push({name:split_sql_headers[i][depth], children: []});
                     }  
+                    current_level = current_level.at(-1).children;
+                } else {
+                    current_level = match.children;
                 }
-                current_level = current_level.at(-1).children;
-
-                // current_children = current_children[-1].children;
-                // if (typeof current_children == 'undefined') current_children = [];
-                // if (depth = max_depth - 1) {
-                //     // nested_column_to_add
-                //     current_children.push({name:split_sql_headers[i][depth], prop:sql_headers[i]})
-                //     break;
-                // }
-                // if (split_sql_headers[i][depth] != prior_names[depth]) {
-                    
-                //     current_children = [];
-                //     // nested_column_to_add = {name:};
-                    
-                //     nested_column_to_add['name'] = split_sql_headers[i][depth];
-
-                // }
-
             }
-            // for (depth=0; depth < max_depth; depth++) {
-            //     prior_names[depth] = split_sql_headers[i][depth];
-            // }
-
-
         }
 
         console.log(output_columns);
         return output_columns;
 
     }
-    // function build_columns(pivoted_data, column_separator) {
-    //     var output_columns = [];
-    //     var sql_headers = [];
-    //     for (var column in pivoted_data[0]) {
-    //         sql_headers.push(column);
-    //     }
 
-    //     var split_sql_headers = [];
-    //     for (var i=0; i < sql_headers.length; i++) {
-    //         split_sql_headers.push(sql_headers[i].split(column_separator));
-    //     }
-
-    //     console.log('split_sql_headers:\n',split_sql_headers);
-    //     var current_children = [];
-    //     output_columns = build_columns_recursive(sql_headers, split_sql_headers, 0, 0, output_columns, current_children);
-
-    // }
-    // function build_columns_recursive(sql_headers, split_sql_headers, column_number, depth, output_columns, current_children) {
-    //     var max_depth = split_sql_headers[column_number].length;
-
-    //     if (depth == max_depth -1) {
-    //         current_children.push({name:split_sql_headers[column_number][depth], prop:sql_headers[i]})
-    //         return current_children;
-    //     }
-
-    //     // output_columns['children'] = current_children;
-
-    //     return output_columns;
-    // }
+    function find_match_in_array_of_obj(my_array, key, value) {
+        for (var i=0; i < my_array.length; i++) {
+            if(my_array[i][key] == value) return my_array[i];
+        }
+        return undefined;
+    }
+    
 
     function dummy_build_columns() {
         column_size = 125;
