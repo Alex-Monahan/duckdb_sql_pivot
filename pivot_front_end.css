@@ -1,0 +1,16 @@
+#wrapper {
+    /* display: flex; */
+    width:1550px;
+    height:100%;
+}
+#grid-div {
+    max-width:1250px;
+    float:left;
+    border:1px;
+    border-color: grey;
+}
+#column-list {
+    width:300px;
+    height:800px;
+    float:left;
+}

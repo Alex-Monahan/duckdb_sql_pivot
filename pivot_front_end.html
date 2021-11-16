@@ -3,11 +3,18 @@
     <head>
         <!-- With unpkg -->
         <script src="https://cdn.jsdelivr.net/npm/@revolist/revogrid@latest/dist/revo-grid/revo-grid.js"></script>
+        
         <script src="pivot_front_end.js"></script>
+        <link rel="stylesheet" href="pivot_front_end.css">
     </head>
     <body>
-        <div style="max-width:1250px">
-            <revo-grid class="grid-component" filter=true/>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js'></script>
+        <div id="wrapper">
+            <div id="column-list" class="container"></div>
+
+            <div id="grid-div" >
+                <revo-grid class="grid-component" filter=true/>
+            </div>
         </div>
     </body>
 </html>
