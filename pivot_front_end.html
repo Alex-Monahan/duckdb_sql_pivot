@@ -10,8 +10,14 @@
     <body>
         <script src='https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js'></script>
         <div id="wrapper">
-            <div id="column-list" class="container"></div>
-
+            <div id="field-list">
+                <div id="available-columns-list" class="container"></div>
+                
+                <div id="filters-list" class="container"></div>
+                <div id="columns-list" class="container"></div>
+                <div id="rows-list" class="container"></div>
+                <div id="values-list" class="container"></div>
+            </div>
             <div id="grid-div" >
                 <revo-grid class="grid-component" filter=true/>
             </div>
