@@ -37,7 +37,7 @@ app.get('/column_list', async (req, res) => {
     table_create_message = await create_example_table(db, 'my_table',0); //Use 0 to get no modification
     console.log(Date.now(),table_create_message);
     try {
-        message = await column_list(db, 'my_table')
+        message = await column_list(db, req.query.table_name)
     } catch(e) {
         message = e.message;
     }
@@ -107,7 +107,10 @@ async function column_list(db, table_name) {
     join pg_class c
     on a.attrelid = c.oid
     where
-        c.relname = ?::string`
+        c.relname = ?::string
+    order by
+        1
+        `
 
     return run_query(db,sql,[table_name]);
 }

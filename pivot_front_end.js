@@ -19,6 +19,17 @@ window.onload = async function() {
     
     console.log('Loaded!!');
     const column_separator = ' | ';
+    const column_list = fetch('http:localhost:3000/column_list?table_name=my_table');
+    column_list.then(async function(column_list_response) {
+        available_columns = await column_list_response.json();
+        console.log(available_columns);
+        for (var i = 0; i < available_columns.length; i++) {
+            var temp_div = document.createElement('div');
+            temp_div.className = 'available-column';
+            temp_div.innerHTML = available_columns[i].column_name;
+            document.getElementById('available-columns-list').appendChild(temp_div);
+        }
+    });
     const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory&columns=product_family,product&values=MAX(revenue),AVG(inventory)');
 
     let pivoted_data = await response.json();
@@ -37,6 +48,8 @@ window.onload = async function() {
     grid.columns = build_columns(pivoted_data,column_separator);
     // grid.columns = dummy_build_columns();
     grid.source = pivoted_data;
+
+    
 
     function build_columns(pivoted_data, column_separator) {
         var output_columns = [];
