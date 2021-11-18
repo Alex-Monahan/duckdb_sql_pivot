@@ -29,6 +29,7 @@ window.onload = async function() {
             temp_div.innerHTML = available_columns[i].column_name;
             document.getElementById('available-columns-list').appendChild(temp_div);
         }
+        dragula([document.getElementById('available-columns-list')]);
     });
     const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory&columns=product_family,product&values=MAX(revenue),AVG(inventory)');
 
