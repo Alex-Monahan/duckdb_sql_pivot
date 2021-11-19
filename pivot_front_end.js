@@ -18,8 +18,16 @@ window.onload = async function() {
 
     
     console.log('Loaded!!');
-    const column_separator = ' | ';
+    
     const column_list = fetch('http:localhost:3000/column_list?table_name=my_table');
+    document.getElementById('values-list').addEventListener('click', function (event) {
+        console.log(event.currentTarget.innerText);
+        event.currentTarget.contentEditable = "true";
+        event.currentTarget.addEventListener('blur',async function(event){
+            console.log('values blur');
+            await get_values_refresh_grid();
+        });
+    });
     column_list.then(async function(column_list_response) {
         available_columns = await column_list_response.json();
         console.log(available_columns);
@@ -29,27 +37,73 @@ window.onload = async function() {
             temp_div.innerHTML = available_columns[i].column_name;
             document.getElementById('available-columns-list').appendChild(temp_div);
         }
-        dragula([document.getElementById('available-columns-list')]);
+        dragula([document.getElementById('available-columns-list'),
+                 document.getElementById('filters-list'),
+                 document.getElementById('rows-list'),
+                 document.getElementById('columns-list'),
+                 document.getElementById('values-list')
+            ],{
+            copy: function (el, source) {
+              return source === document.getElementById('available-columns-list')
+            },
+            accepts: function (el, target) {
+              return target !== document.getElementById('available-columns-list')
+            },
+            removeOnSpill:true
+        }).on('drop', async function (el) {
+            await get_values_refresh_grid();
+        });
     });
-    const response = await fetch('http:localhost:3000/pivot?table_name=my_table&rows=category,subcategory&columns=product_family,product&values=MAX(revenue),AVG(inventory)');
-
-    let pivoted_data = await response.json();
-
-    const grid = document.querySelector('revo-grid');
-    grid.resize = true;
-    grid.autoSizeColumn = {
-        mode: 'autoSizeAll',
-        allColumns: true,
-        preciseSize: true
-    };
-    // grid.filter = true; //This is handled directly in the html
-    grid.readonly = true;
-    grid.theme = "default";
+    var table_name = 'my_table';
+    var filters = ''; //TODO
+    var rows = ['category','subcategory'];
+    var columns = ['product_family','product'];
+    var values = ['MAX(revenue)','AVG(inventory)'];
+    await refresh_grid(table_name,filters,rows,columns,values);
     
-    grid.columns = build_columns(pivoted_data,column_separator);
-    // grid.columns = dummy_build_columns();
-    grid.source = pivoted_data;
+    async function get_values_refresh_grid() {
+        var table_name = 'my_table';
+        var filters = ''; //TODO
+        var rows=[];
+        for (var i=0; i < document.getElementById('rows-list').children.length; i++) {
+            rows.push(document.getElementById('rows-list').children[i].innerText);
+        }
+        var columns = [];
+        for (var i=0; i < document.getElementById('columns-list').children.length; i++) {
+            columns.push(document.getElementById('columns-list').children[i].innerText);
+        }
+        var values = [];
+        for (var i=0; i < document.getElementById('values-list').children.length; i++) {
+            values.push(document.getElementById('values-list').children[i].innerText);
+        }
+        await refresh_grid(table_name,filters,rows,columns,values)
+    }
+    async function refresh_grid(table_name,filters,rows,columns,values) {
+        const column_separator = ' | ';
+        
+        const response = await fetch('http:localhost:3000/pivot?table_name='+table_name+
+                                     '&rows='+rows.toString()+
+                                     '&columns='+columns.toString()+
+                                     '&values='+values.toString());
 
+        let pivoted_data = await response.json();
+
+        const grid = document.querySelector('revo-grid');
+        grid.resize = true;
+        grid.autoSizeColumn = {
+            mode: 'autoSizeAll',
+            allColumns: true,
+            preciseSize: true
+        };
+        // grid.filter = true; //This is handled directly in the html
+        grid.readonly = true;
+        grid.theme = "default";
+        
+        grid.columns = build_columns(pivoted_data,column_separator);
+        // grid.columns = dummy_build_columns();
+        grid.source = pivoted_data;
+
+    }
     
 
     function build_columns(pivoted_data, column_separator) {
