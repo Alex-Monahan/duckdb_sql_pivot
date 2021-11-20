@@ -23,14 +23,7 @@ window.onload = async function() {
     console.log('Loaded!!');
     
     const column_list = fetch('http:localhost:3000/column_list?table_name=my_table');
-    document.getElementById('values-list').addEventListener('click', function (event) {
-        console.log(event.currentTarget.innerText);
-        event.currentTarget.contentEditable = "true";
-        event.currentTarget.addEventListener('blur',async function(event){
-            console.log('values blur');
-            await get_values_refresh_grid();
-        });
-    });
+
     column_list.then(async function(column_list_response) {
         available_columns = await column_list_response.json();
         console.log(available_columns);
@@ -53,8 +46,22 @@ window.onload = async function() {
               return target !== document.getElementById('available-columns-list')
             },
             removeOnSpill:true
-        }).on('drop', async function (el) {
-            await get_values_refresh_grid();
+        }).on('drop', async function (el, target, source, sibling) {
+            console.log('In drop event with','el',el,'target',target,'source',source,'sibling',sibling);
+            if (target.id == 'values-list') {
+                //Don't want to refresh immediately - want to prompt for what type of aggregatation to do
+                el.innerText = 'COUNT('+el.innerText+')';
+                el.contentEditable = "true";
+                el.focus();
+                console.log('Done setting up values item');
+                el.addEventListener('blur',async function(event){
+                    console.log('values blur');
+                    await get_values_refresh_grid();
+                });
+            } else {
+                await get_values_refresh_grid();
+            }
+            
         }).on('remove', async function (el) {
             await get_values_refresh_grid();
         });
@@ -124,7 +131,6 @@ window.onload = async function() {
             split_sql_headers.push(sql_headers[i].split(column_separator));
         }
 
-        console.log('split_sql_headers:\n',split_sql_headers);
         //Because we are always doing all combinations of things, I know the depth will be consistent for every column that has a separator
         //(headers in the "rows" parameter don't have a separator so they have a depth of 1)
         //I also know that as soon as I find a column with a depth > 1, all other columns will have that depth
@@ -168,7 +174,6 @@ window.onload = async function() {
             }
         }
 
-        console.log(output_columns);
         return output_columns;
 
     }

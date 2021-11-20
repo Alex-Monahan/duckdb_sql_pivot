@@ -63,7 +63,7 @@ revo-grid[theme=default] revogr-header .header-rgRow, revo-grid[theme=default] r
 .container > div, .gu-mirror {
     margin: 4px;
     padding: 4px;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.1);
     transition: opacity 0.4s ease-in-out;
 }
 .container > div {
