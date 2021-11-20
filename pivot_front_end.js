@@ -52,6 +52,8 @@ window.onload = async function() {
             removeOnSpill:true
         }).on('drop', async function (el) {
             await get_values_refresh_grid();
+        }).on('remove', async function (el) {
+            await get_values_refresh_grid();
         });
     });
     var table_name = 'my_table';
