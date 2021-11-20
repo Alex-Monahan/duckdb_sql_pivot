@@ -1,4 +1,5 @@
 /* Back end TODO list:
+        Handle the case with nothing in the columns in SQL instead of a separate if statement
         Filters feature
             In both the final query and the distinct columns pre-query
         Escape single quotes in column values
@@ -198,6 +199,8 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 values || pre_columns_sub_clause || ' | ' || values || '"' as columns_sub_clause
             from pre_columns_sub_clause
             join values on 1=1
+            where
+                values != ''
         ), select_clause as (
             select
                 'SELECT
