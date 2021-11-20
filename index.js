@@ -172,6 +172,8 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
     //      Then do a final concatenation
     //The SQL used to build up the SQL statement will be lower case. The SQL I generate will have upper case keywords.
     //TODO: Add in WITH ORDINALITY a(rows, row_order) to enforce order on the unnest clause for rows
+    if (typeof values == 'undefined' || values == '') values = 'COUNT(*)'
+
     pre_columns_sub_clause = await build_pre_column_sub_clause(db, table_name, columns, values, filters);
     console.log(pre_columns_sub_clause);
     // return run_query(db,columns_sub_clause);
@@ -199,8 +201,6 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 values || pre_columns_sub_clause || ' | ' || values || '"' as columns_sub_clause
             from pre_columns_sub_clause
             join values on 1=1
-            where
-                values != ''
         ), select_clause as (
             select
                 'SELECT
