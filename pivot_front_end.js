@@ -1,11 +1,14 @@
 /* Front End TODO list:
         DONE: Make column headers dynamic
-        Make basic draggable/droppable GUI
-        Test out a lot of combinations
-        Order by / filter each column
-            Make filters dynamic by type of data within the column
+        DONE: Make basic draggable/droppable GUI
+        DONE: Test out a lot of combinations
+        DONE: Order by / filter each column
+
+        Make the GUI look good!
+        Add a default to values (count) and make editing nicer
+        Make filters dynamic by type of data within the column
         Add GUI and support for other parameters (Ex: subtotals or not, subtotals above or below (just ASC vs. DESC in GROUPING() in ORDER BY clause))
-        Freeze panes
+        DONE: Freeze panes
         Auto-size the header widths
         Rowspan?
         Allow for Values sigma feature?
