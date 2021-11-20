@@ -78,13 +78,14 @@ window.onload = async function() {
         }
         await refresh_grid(table_name,filters,rows,columns,values)
     }
-    async function refresh_grid(table_name,filters,rows,columns,values) {
+    async function refresh_grid(table_name,filters,rows,columns,values, row_subtotals=1) {
         const column_separator = ' | ';
         
         const response = await fetch('http:localhost:3000/pivot?table_name='+table_name+
                                      '&rows='+rows.toString()+
                                      '&columns='+columns.toString()+
-                                     '&values='+values.toString());
+                                     '&values='+values.toString() +
+                                     '&row_subtotals='+row_subtotals);
 
         let pivoted_data = await response.json();
 

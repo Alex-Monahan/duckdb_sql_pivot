@@ -33,7 +33,7 @@ app.use(cors({
 app.get('/column_list', async (req, res) => {
     var db = new duckdb.Database(':memory:');
     pragma_output = await run_query(db,"PRAGMA THREADS = 16");
-    console.log('pragma_output',pragma_output);
+    // console.log('pragma_output',pragma_output);
     table_create_message = await create_example_table(db, 'my_table',0); //Use 0 to get no modification
     console.log(Date.now(),table_create_message);
     try {
@@ -48,7 +48,7 @@ app.get('/pivot', async (req, res) => {
     var startDate = new Date();
     var db = new duckdb.Database(':memory:');
     pragma_output = await run_query(db,"PRAGMA THREADS = 16");
-    console.log('pragma_output',pragma_output);
+    // console.log('pragma_output',pragma_output);
     table_create_message = await create_example_table(db, 'my_table',30000); //Use 0 to get no modification
     console.log(table_create_message);
     var endDate   = new Date();
@@ -186,6 +186,8 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
                 else 'CASE WHEN GROUPING(' || rows || ') = 1 then ''Total'' else '|| rows || ' end as ' || rows
                 end as rows_sub_clause
             from rows
+            where
+                rows != ''
         ), values as (
             select 
                 unnest(['`+clean_query_parameter(values.replace(/,/g,"','"))+`']) as values
@@ -220,8 +222,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
         ), group_by_clause as (
             select 
                 min(case when row_subtotals = 0 then 'GROUP BY '
-                else ' GROUP BY 
-                ROLLUP ('
+                else ' GROUP BY ROLLUP ('
                 end)
                 || string_agg(rows,',') ||
                 min(case when row_subtotals = 0 then ''
@@ -230,8 +231,7 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
             from rows
         ), order_by_clause as (
             select 
-                min(' ORDER BY 
-                ')
+                min(' ORDER BY ')
                 || string_agg(
                     case when row_subtotals = 0 then rows
                     else 'GROUPING(' || rows || '), ' || rows 
@@ -241,8 +241,8 @@ async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, 
         ), all_clauses as (
             select 1 as clause_order, select_clause::varchar as clause from select_clause union all
             select 2 as clause_order, from_clause::varchar as clause from from_clause union all
-            select 3 as clause_order, group_by_clause::varchar as clause from group_by_clause union all
-            select 4 as clause_order, order_by_clause::varchar as clause from order_by_clause
+            select 3 as clause_order, group_by_clause::varchar as clause from group_by_clause where trim(group_by_clause) not in ('GROUP BY','GROUP BY ROLLUP ()') union all
+            select 4 as clause_order, order_by_clause::varchar as clause from order_by_clause where trim(order_by_clause) not in ('ORDER BY','ORDER BY GROUPING(),')
         )
         
         select 
@@ -263,6 +263,11 @@ async function build_pre_column_sub_clause(db, table_name, columns=undefined, va
     //      Then I need to pull in the AVG(revenue) stuff. 
     //Basically, I need a fully baked AVG(revenue) FILTER (WHERE x = 'a' and y = 'b') as "a | b | AVG(revenue)"
     //Then go back to the build_sql_pivot portion and integrate this in with that (should just be a single string_agg with commas between the rows and columns)
+    if (typeof columns == 'undefined' || columns == '') {
+        return `
+        SELECT ' AS "' AS pre_columns_sub_clause 
+        `
+    }
     sql = `
     WITH columns as (
         select 
@@ -312,6 +317,7 @@ async function build_pre_column_sub_clause(db, table_name, columns=undefined, va
     `
     console.log(sql);
     query_output = await run_query(db,sql);
+    // console.log(query_output);
     return query_output[0].clauses;
 }
 
