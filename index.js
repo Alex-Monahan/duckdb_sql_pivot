@@ -19,6 +19,15 @@
 
         It takes half the time if subtotals are off! 
 
+Figure out what is wrong with this query that causes DuckDB to crash:
+SELECT
+                CASE WHEN GROUPING(product) = 1 then 'Total' else product end as product
+, CASE WHEN GROUPING(product_family) = 1 then 'Total' else product_family end as product_family
+, COUNT(distinct product_family) AS " | COUNT(distinct product_family)"
+             FROM "my_table"
+             GROUP BY ROLLUP (product,product_family)
+             ORDER BY GROUPING(product), product, GROUPING(product_family), product_family
+
 
 */
 const express = require('express')
@@ -30,6 +39,9 @@ const cors = require('cors');
 app.use(cors({
     origin: '*'
 }));
+
+//This serves up static files (.js, .css, etc.) so that I can pull in DuckDB!
+app.use(express.static('../duckdb_sql_pivot'));
 
 app.get('/column_list', async (req, res) => {
     var db = new duckdb.Database(':memory:');

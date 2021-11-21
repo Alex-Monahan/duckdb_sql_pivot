@@ -22,7 +22,7 @@ window.onload = async function() {
     
     console.log('Loaded!!');
     
-    const column_list = fetch('http:localhost:3000/column_list?table_name=my_table');
+    const column_list = fetch('http://localhost:3000/column_list?table_name=my_table');
 
     column_list.then(async function(column_list_response) {build_filter_list(column_list_response);});
     var table_name = 'my_table';
@@ -96,7 +96,7 @@ async function get_values_refresh_grid() {
 async function refresh_grid(table_name,filters,rows,columns,values, row_subtotals=1) {
     const column_separator = ' | ';
     
-    const response = await fetch('http:localhost:3000/pivot?table_name='+table_name+
+    const response = await fetch('http://localhost:3000/pivot?table_name='+table_name+
                                  '&rows='+rows.toString()+
                                  '&columns='+columns.toString()+
                                  '&values='+values.toString() +
