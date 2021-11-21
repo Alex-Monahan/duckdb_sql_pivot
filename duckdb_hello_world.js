@@ -1,4 +1,5 @@
 import * as duckdb from './duckdb-browser.mjs';
+import {dummy_build_columns} from './pivot_front_end.js'
 
 (async () => {
     try {
@@ -28,3 +29,11 @@ import * as duckdb from './duckdb-browser.mjs';
         console.error(e);
     }
 })();
+(async () => {
+    
+    console.log('dummy_build_columns:',dummy_build_columns());
+})();
+async function duckdb_wasm_pivot(table_name,filters,rows,columns,values, row_subtotals=1) {
+    console.log('Made it to duckdb_wasm_pivot!');
+    return [{'test':'woot'}];
+}

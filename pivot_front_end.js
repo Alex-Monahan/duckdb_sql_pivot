@@ -18,24 +18,22 @@
 
 */
 window.onload = async function() {
-
-    
     console.log('Loaded!!');
     
     const column_list = fetch('http://localhost:3000/column_list?table_name=my_table');
 
-    column_list.then(async function(column_list_response) {build_filter_list(column_list_response);});
+    column_list.then(async function(column_list_response) {build_filter_list(column_list_response,server_pivot_function);});
     var table_name = 'my_table';
     var filters = ''; //TODO
     var rows = ['category','subcategory'];
     var columns = ['product_family','product'];
     var values = ['MAX(revenue)','AVG(inventory)'];
-    await refresh_grid(table_name,filters,rows,columns,values);
+    await refresh_grid(table_name,filters,rows,columns,values,undefined,server_pivot_function);
     
 
 };
-async function build_filter_list(column_list_response) {
-    available_columns = await column_list_response.json();
+export async function build_filter_list(column_list_response,server_pivot_function) {
+    var available_columns = await column_list_response.json();
     console.log(available_columns);
     for (var i = 0; i < available_columns.length; i++) {
         var temp_div = document.createElement('div');
@@ -66,17 +64,17 @@ async function build_filter_list(column_list_response) {
             console.log('Done setting up values item');
             el.addEventListener('blur',async function(event){
                 console.log('values blur');
-                await get_values_refresh_grid();
+                await get_inputs_refresh_grid(server_pivot_function);
             });
         } else {
-            await get_values_refresh_grid();
+            await get_inputs_refresh_grid(server_pivot_function);
         }
         
     }).on('remove', async function (el) {
-        await get_values_refresh_grid();
+        await get_inputs_refresh_grid(server_pivot_function);
     });
 }
-async function get_values_refresh_grid() {
+export async function get_inputs_refresh_grid(server_pivot_function) {
     var table_name = 'my_table';
     var filters = ''; //TODO
     var rows=[];
@@ -91,18 +89,12 @@ async function get_values_refresh_grid() {
     for (var i=0; i < document.getElementById('values-list').children.length; i++) {
         values.push(document.getElementById('values-list').children[i].innerText);
     }
-    await refresh_grid(table_name,filters,rows,columns,values)
+    await refresh_grid(table_name,filters,rows,columns,values,undefined,server_pivot_function)
 }
-async function refresh_grid(table_name,filters,rows,columns,values, row_subtotals=1) {
+export async function refresh_grid(table_name,filters,rows,columns,values,row_subtotals=1,pivot_function=undefined) {
     const column_separator = ' | ';
     
-    const response = await fetch('http://localhost:3000/pivot?table_name='+table_name+
-                                 '&rows='+rows.toString()+
-                                 '&columns='+columns.toString()+
-                                 '&values='+values.toString() +
-                                 '&row_subtotals='+row_subtotals);
-
-    let pivoted_data = await response.json();
+    let pivoted_data =  await pivot_function(table_name,filters,rows,columns,values,row_subtotals);
 
     const grid = document.querySelector('revo-grid');
     grid.resize = true;
@@ -120,7 +112,16 @@ async function refresh_grid(table_name,filters,rows,columns,values, row_subtotal
     grid.source = pivoted_data;
 
 }
-function build_columns(pivoted_data, column_separator) {
+export async function server_pivot_function(table_name,filters,rows,columns,values,row_subtotals=1) {
+    const response = await fetch('http://localhost:3000/pivot?table_name='+table_name+
+                                 '&rows='+rows.toString()+
+                                 '&columns='+columns.toString()+
+                                 '&values='+values.toString() +
+                                 '&row_subtotals='+row_subtotals);
+
+    return response.json();
+}
+export function build_columns(pivoted_data, column_separator) {
     var output_columns = [];
     var sql_headers = [];
     for (var column in pivoted_data[0]) {
@@ -184,8 +185,8 @@ function find_match_in_array_of_obj(my_array, key, value) {
     }
     return undefined;
 }
-function dummy_build_columns() {
-    column_size = 125;
+export function dummy_build_columns() {
+    var column_size = 125;
     //Maybe I can build my own size by taking the length of the deepest node's name and multiplying by 7px?
     //Can I do this with a loop instead of recursively? I can just look back and see if we are at the final depth and if it has changed since the last one?
     /*
@@ -224,3 +225,4 @@ function dummy_build_columns() {
     ]
 
 }
+
