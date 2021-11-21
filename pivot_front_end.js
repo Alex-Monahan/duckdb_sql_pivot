@@ -17,21 +17,21 @@
         
 
 */
-window.onload = async function() {
-    console.log('Loaded!!');
+// window.onload = async function() {
+//     console.log('Loaded!!');
     
-    const column_list = fetch('http://localhost:3000/column_list?table_name=my_table');
+//     const column_list = fetch('http://localhost:3000/column_list?table_name=my_table');
 
-    column_list.then(async function(column_list_response) {build_filter_list(column_list_response,server_pivot_function);});
-    var table_name = 'my_table';
-    var filters = ''; //TODO
-    var rows = ['category','subcategory'];
-    var columns = ['product_family','product'];
-    var values = ['MAX(revenue)','AVG(inventory)'];
-    await refresh_grid(table_name,filters,rows,columns,values,undefined,server_pivot_function);
+//     column_list.then(async function(column_list_response) {build_filter_list(column_list_response,server_pivot_function);});
+//     var table_name = 'my_table';
+//     var filters = ''; //TODO
+//     var rows = ['category','subcategory'];
+//     var columns = ['product_family','product'];
+//     var values = ['MAX(revenue)','AVG(inventory)'];
+//     await refresh_grid(table_name,filters,rows,columns,values,undefined,server_pivot_function);
     
 
-};
+// };
 export async function build_filter_list(column_list_response,server_pivot_function) {
     var available_columns = await column_list_response.json();
     console.log(available_columns);
