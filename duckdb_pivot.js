@@ -172,8 +172,13 @@ async function column_list(db, table_name) {
     return run_query(db,sql,[table_name]);
 }
 async function client_pivot(db,table_name,filters,rows,columns,values,row_subtotals=1) {
+    var startDate = new Date();
+    
     var pivot_sql = await build_pivot_sql(db, table_name, rows, columns, values, filters, row_subtotals);
-    return run_query(db,pivot_sql);
+    var pivot_output = await run_query(db,pivot_sql)
+    var endDate   = new Date();
+    console.log('Finished pivot operation after ',(endDate.getTime() - startDate.getTime()) / 1000,' seconds');
+    return pivot_output;
 }
 async function build_pivot_sql(db,table_name,rows=undefined, columns=undefined, values=undefined, filters=undefined,
                                row_subtotals=1) {

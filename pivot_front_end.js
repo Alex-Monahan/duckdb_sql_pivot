@@ -125,7 +125,8 @@ export async function server_pivot_function(db,table_name,filters,rows,columns,v
 export function build_columns(pivoted_data, column_separator) {
     var output_columns = [];
     var sql_headers = [];
-    for (var column in pivoted_data[0]) {
+    //parse/stringify needed to remove the Arrow metadata column "size" from the grid output
+    for (var column in JSON.parse(JSON.stringify(pivoted_data[0]))) {
         sql_headers.push(column);
     }
 
