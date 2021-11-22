@@ -32,8 +32,8 @@
     
 
 // };
-export async function build_filter_list(column_list_response,server_pivot_function) {
-    var available_columns = await column_list_response.json();
+export async function build_filter_list(column_list, db, server_pivot_function) {
+    var available_columns = column_list;
     console.log(available_columns);
     for (var i = 0; i < available_columns.length; i++) {
         var temp_div = document.createElement('div');
@@ -64,17 +64,17 @@ export async function build_filter_list(column_list_response,server_pivot_functi
             console.log('Done setting up values item');
             el.addEventListener('blur',async function(event){
                 console.log('values blur');
-                await get_inputs_refresh_grid(server_pivot_function);
+                await get_inputs_refresh_grid(db, server_pivot_function);
             });
         } else {
-            await get_inputs_refresh_grid(server_pivot_function);
+            await get_inputs_refresh_grid(db, server_pivot_function);
         }
         
     }).on('remove', async function (el) {
-        await get_inputs_refresh_grid(server_pivot_function);
+        await get_inputs_refresh_grid(db, server_pivot_function);
     });
 }
-export async function get_inputs_refresh_grid(server_pivot_function) {
+export async function get_inputs_refresh_grid(db, server_pivot_function) {
     var table_name = 'my_table';
     var filters = ''; //TODO
     var rows=[];
@@ -89,12 +89,13 @@ export async function get_inputs_refresh_grid(server_pivot_function) {
     for (var i=0; i < document.getElementById('values-list').children.length; i++) {
         values.push(document.getElementById('values-list').children[i].innerText);
     }
-    await refresh_grid(table_name,filters,rows,columns,values,undefined,server_pivot_function)
+    await refresh_grid(db, table_name,filters,rows.toString(),columns.toString(),values.toString(),undefined,server_pivot_function)
 }
-export async function refresh_grid(table_name,filters,rows,columns,values,row_subtotals=1,pivot_function=undefined) {
+export async function refresh_grid(db, table_name,filters,rows,columns,values,row_subtotals=1,pivot_function=undefined) {
     const column_separator = ' | ';
     
-    let pivoted_data =  await pivot_function(table_name,filters,rows,columns,values,row_subtotals);
+    //There is no db to pass in, but we need it for compatibility with the function signature needed in WASM DuckDB
+    let pivoted_data =  await pivot_function(db,table_name,filters,rows,columns,values,row_subtotals);
 
     const grid = document.querySelector('revo-grid');
     grid.resize = true;
@@ -112,11 +113,11 @@ export async function refresh_grid(table_name,filters,rows,columns,values,row_su
     grid.source = pivoted_data;
 
 }
-export async function server_pivot_function(table_name,filters,rows,columns,values,row_subtotals=1) {
+export async function server_pivot_function(db,table_name,filters,rows,columns,values,row_subtotals=1) {
     const response = await fetch('http://localhost:3000/pivot?table_name='+table_name+
-                                 '&rows='+rows.toString()+
-                                 '&columns='+columns.toString()+
-                                 '&values='+values.toString() +
+                                 '&rows='+rows+
+                                 '&columns='+columns+
+                                 '&values='+values +
                                  '&row_subtotals='+row_subtotals);
 
     return response.json();
