@@ -54,6 +54,7 @@ async function set_up_client_pivot() {
 
     //Create dummy data
     var table_name = 'my_table';
+    //30000 yields ~1 million rows
     var table_create_message = await create_example_table(db_obj.conn, table_name,30000); //Use 0 to get no modification
     // console.log(JSON.parse(table_create_message.toArray()));
     console.log(arrow_to_array_of_json(table_create_message));
@@ -175,6 +176,7 @@ async function client_pivot(db,table_name,filters,rows,columns,values,row_subtot
     var startDate = new Date();
     
     var pivot_sql = await build_pivot_sql(db, table_name, rows, columns, values, filters, row_subtotals);
+    console.log('Pivot SQL statement:\n',pivot_sql);
     var pivot_output = await run_query(db,pivot_sql)
     var endDate   = new Date();
     console.log('Finished pivot operation after ',(endDate.getTime() - startDate.getTime()) / 1000,' seconds');
